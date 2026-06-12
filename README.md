@@ -1,7 +1,10 @@
 # Midnight Loading Screen
 
 Custom FiveM loadscreen with live server stats, background slideshow, music player, and staff panel.
+---
 
+## DEPENDENCIES
+https://github.com/TheOrderFivem/community_bridge/releases
 ---
 
 ## Installation
