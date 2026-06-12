@@ -3,8 +3,13 @@
 Custom FiveM loadscreen with live server stats, background slideshow, music player, and staff panel.
 ---
 
+## Discord
+https://discord.gg/8YpYsafebn
+---
+
 ## Showcase
 https://www.youtube.com/watch?v=rdxRVXlv1TY
+---
 
 ## DEPENDENCIES
 https://github.com/TheOrderFivem/community_bridge/releases
