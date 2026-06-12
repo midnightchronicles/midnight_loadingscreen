@@ -10,7 +10,6 @@ Custom FiveM loadscreen with live server stats, background slideshow, music play
 2. Add to `server.cfg`:
 
 ```cfg
-
 ensure community_bridge # Required for live job/staff stats (start before the loadscreen)
 
 ensure midnight_loadingscreen
@@ -19,7 +18,7 @@ ensure midnight_loadingscreen
 setr sv_showBusySpinnerOnLoadingScreen false
 ```
 
-3. Restart the server
+3. Restart the server.
 
 ---
 
@@ -47,17 +46,17 @@ backgroundImages: [
 ],
 ```
 
-to use Local images: place in `web/images/`, add `'web/images/*.png'` to `fxmanifest.lua`, then use `"images/yourfile.png"`.
+To use local images: place in `web/images/`, add `'web/images/*.png'` to `fxmanifest.lua`, then use `"images/yourfile.png"`.
 
-### Loading messages (quotes) — `web/script.js`**
+### Loading messages (quotes) — `web/script.js`
+
+```js
 loadingMessages: [
   "Hold tight, friend...",
   "Teaching peds how to jaywalk...",
   "Almost there... probably",
 ],
 extraDelayMessage: "Setting up your character... hang tight!",
-
-
 ```
 
 ### Owners (1–2)
@@ -76,6 +75,7 @@ owners: [
   //   image: "https://example.com/avatar2.png",
   // },
 ],
+```
 
 ### Staff list (unlimited)
 
@@ -113,7 +113,7 @@ web/sound/track1.mp3
 web/sound/track2.mp3
 ```
 
-For video with sound, use `.mp4` and set `sound: "mp4"` in config. --mp4 is untested and will be a fix yourself kind of reply so use with fingers crossed
+For video with sound, use `.mp4` and set `sound: "mp4"` in config. MP4 is untested — use at your own risk.
 
 ### Step 2 — Edit `web/config.js`
 
@@ -125,10 +125,10 @@ tracks: [
 ],
 ```
 
-| Field | Description |
-|-------|-------------|
-| `file` | Filename only (e.g. `track1.mp3`) — do not include `sound/` |
-| `title` | Label shown in the music player |
+| Field   | Description                                              |
+|---------|----------------------------------------------------------|
+| `file`  | Filename only (e.g. `track1.mp3`) — do not include `sound/` |
+| `title` | Label shown in the music player                          |
 
 ---
 
@@ -136,12 +136,12 @@ tracks: [
 
 Requires **Community Bridge** and your framework (e.g. QBX) running.
 
-| Stat | Source |
-|------|--------|
-| Online | Players fully loaded in the server |
-| Police / EMS / Mechanic | Job counts (`police`, `ambulance`, `mechanic`) |
-| Staff | Players with framework admin |
-| Connecting | Players still loading in (not fully in server yet) |
+| Stat                    | Source                                              |
+|-------------------------|-----------------------------------------------------|
+| Online                  | Players fully loaded in the server                  |
+| Police / EMS / Mechanic   | Job counts (`police`, `ambulance`, `mechanic`)      |
+| Staff                   | Players with framework admin                        |
+| Connecting              | Players still loading in (not fully in server yet)  |
 
 Job names are set in `server/server.lua` if your server uses different names:
 
@@ -151,12 +151,14 @@ local JOB_EMS = 'ambulance'
 local JOB_MECHANIC = 'mechanic'
 ```
 
+---
+
 ## Other tweaks
 
-| What | File | Notes |
-|------|------|--------|
-| Extra time on loadscreen after 100% | `client/client.lua` | `EXTRA_DELAY_MS = 5000` | -- to allow for character selection to load behind without the map showing inbetween
-| Colours / layout | `web/style.css` | Glass panels, stats bar, etc. |
+| What                               | File                 | Notes                                                                 |
+|------------------------------------|----------------------|-----------------------------------------------------------------------|
+| Extra time on loadscreen after 100% | `client/client.lua`  | `EXTRA_DELAY_MS = 5000` — allows character selection to load behind the screen without the map showing in between |
+| Colours / layout                   | `web/style.css`      | Glass panels, stats bar, etc.                                         |
 
 ---
 
@@ -171,5 +173,5 @@ local JOB_MECHANIC = 'mechanic'
 
 ## Credits
 
-— Midnight Chronicles loading screen  
-— Community Bridge integration for live server stats.
+- Midnight Chronicles loading screen
+- Community Bridge integration for live server stats
