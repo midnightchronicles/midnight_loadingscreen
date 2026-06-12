@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="origin-when-cross-origin" />
+  <title>Loading</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="background" id="background">
+    <div class="bg-layer bg-layer-a active ken-burns" id="bg-layer-a"></div>
+    <div class="bg-layer bg-layer-b ken-burns" id="bg-layer-b"></div>
+    <div class="background-overlay"></div>
+  </div>
+
+  <header class="stats-bar" id="stats-bar" aria-label="Server status">
+    <div class="stats-item" data-stat="players">
+      <span class="stats-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      </span>
+      <div class="stats-content">
+        <span class="stats-label">Online</span>
+        <span class="stats-value-wrap"><span class="stats-value" id="stat-players" aria-live="polite">—</span></span>
+      </div>
+    </div>
+    <div class="stats-divider" aria-hidden="true"></div>
+    <div class="stats-item" data-stat="police">
+      <span class="stats-icon stats-icon-police" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+      </span>
+      <div class="stats-content">
+        <span class="stats-label">Police</span>
+        <span class="stats-value-wrap"><span class="stats-value" id="stat-police" aria-live="polite">—</span></span>
+      </div>
+    </div>
+    <div class="stats-divider" aria-hidden="true"></div>
+    <div class="stats-item" data-stat="ems">
+      <span class="stats-icon stats-icon-ems" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H6v-2h4V7h2v4h4v2h-4v4z"/></svg>
+      </span>
+      <div class="stats-content">
+        <span class="stats-label">EMS</span>
+        <span class="stats-value-wrap"><span class="stats-value" id="stat-ems" aria-live="polite">—</span></span>
+      </div>
+    </div>
+    <div class="stats-divider" aria-hidden="true"></div>
+    <div class="stats-item" data-stat="mechanic">
+      <span class="stats-icon stats-icon-mechanic" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+      </span>
+      <div class="stats-content">
+        <span class="stats-label">Mechanic</span>
+        <span class="stats-value-wrap"><span class="stats-value" id="stat-mechanic" aria-live="polite">—</span></span>
+      </div>
+    </div>
+    <div class="stats-divider" aria-hidden="true"></div>
+    <div class="stats-item" data-stat="staff">
+      <span class="stats-icon stats-icon-staff" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+      </span>
+      <div class="stats-content">
+        <span class="stats-label">Staff</span>
+        <span class="stats-value-wrap"><span class="stats-value" id="stat-staff" aria-live="polite">—</span></span>
+      </div>
+    </div>
+    <div class="stats-divider" aria-hidden="true"></div>
+    <div class="stats-item" data-stat="connecting">
+      <span class="stats-icon stats-icon-connecting" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+      </span>
+      <div class="stats-content">
+        <span class="stats-label">Connecting</span>
+        <span class="stats-value-wrap"><span class="stats-value" id="stat-connecting" aria-live="polite">—</span></span>
+      </div>
+    </div>
+  </header>
+
+  <aside class="staff-panel" id="staff-panel">
+    <div class="panel-header" id="owner-panel-header">
+      <span class="panel-title" id="owner-panel-title">Owner</span>
+    </div>
+    <div class="owner-list" id="owner-list"></div>
+    <div class="staff-divider">
+      <span>Staff</span>
+    </div>
+    <div class="staff-list" id="staff-list"></div>
+  </aside>
+
+  <div class="video-panel" id="video-panel">
+    <div class="video-container" id="media-container">
+      <div class="audio-visual hidden" id="audio-visual">
+        <div class="audio-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+        </div>
+        <div class="audio-label" id="audio-label">Now Playing</div>
+        <div class="audio-hint" id="audio-hint">Click anywhere for sound</div>
+      </div>
+      <div id="media-player"></div>
+      <div class="video-fallback hidden" id="video-fallback">
+        <p>Media unavailable</p>
+      </div>
+    </div>
+    <div class="video-controls">
+      <button class="control-btn" id="btn-prev" title="Previous">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button class="control-btn control-btn-primary" id="btn-play" title="Play / Pause">
+        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="icon-pause hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+      <button class="control-btn" id="btn-next" title="Next">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </button>
+      <span class="video-counter" id="video-counter">1 / 1</span>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <h1 class="server-name" id="server-name"></h1>
+    <div class="progress-wrapper">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span class="progress-percent" id="progress-percent">0%</span>
+    </div>
+    <p class="progress-status" id="progress-status">Hold tight, friend...</p>
+  </footer>
+
+  <script src="config.js" onerror="document.getElementById('progress-status').textContent='Failed to load config.js';"></script>
+  <script src="script.js" onerror="document.getElementById('progress-status').textContent='Failed to load script.js';"></script>
+</body>
+</html>
