@@ -12,6 +12,7 @@ const Config = {
   loadingMessageInterval: 4500,
 
   sound: "mp3",
+  defaultVolume: 70, // 0–100, starting volume for the music player
   tracks: [
     { file: "track1.mp3", title: "Party House - Kung Pao O'Malley" },
     { file: "track2.mp3", title: "I Feel It All So Deeply - Bail Bonds" },

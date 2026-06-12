@@ -223,6 +223,9 @@
     let currentIndex = 0;
     let isPlaying = false;
     let activeEl = null;
+    let volume = Math.min(1, Math.max(0, (cfg.defaultVolume != null ? cfg.defaultVolume : 70) / 100));
+    let lastVolume = volume;
+    let isMuted = false;
 
     const container = document.getElementById("media-player");
     const mediaWrap = document.getElementById("media-container");
@@ -237,6 +240,11 @@
     const panel = document.getElementById("video-panel");
     const iconPlay = btnPlay.querySelector(".icon-play");
     const iconPause = btnPlay.querySelector(".icon-pause");
+    const btnMute = document.getElementById("btn-mute");
+    const volumeSlider = document.getElementById("volume-slider");
+    const volumeValue = document.getElementById("volume-value");
+    const iconVolume = btnMute ? btnMute.querySelector(".icon-volume") : null;
+    const iconMuted = btnMute ? btnMute.querySelector(".icon-muted") : null;
 
     panel.classList.toggle("audio-mode", !isVideo);
     panel.classList.toggle("video-mode", isVideo);
@@ -253,6 +261,45 @@
       isPlaying = playing;
       iconPlay.classList.toggle("hidden", playing);
       iconPause.classList.toggle("hidden", !playing);
+    }
+
+    function getVolumePercent() {
+      return Math.round((isMuted ? 0 : volume) * 100);
+    }
+
+    function updateVolumeSliderFill() {
+      if (!volumeSlider) return;
+      const pct = getVolumePercent();
+      volumeSlider.style.background =
+        "linear-gradient(to right, var(--accent) 0%, var(--accent) " + pct +
+        "%, rgba(255, 255, 255, 0.12) " + pct + "%, rgba(255, 255, 255, 0.12) 100%)";
+    }
+
+    function updateVolumeUI() {
+      const pct = getVolumePercent();
+      if (volumeSlider) volumeSlider.value = String(pct);
+      if (volumeValue) volumeValue.textContent = pct + "%";
+      if (iconVolume) iconVolume.classList.toggle("hidden", isMuted || pct === 0);
+      if (iconMuted) iconMuted.classList.toggle("hidden", !isMuted && pct > 0);
+      updateVolumeSliderFill();
+    }
+
+    function applyVolume() {
+      if (activeEl) {
+        activeEl.volume = isMuted ? 0 : volume;
+      }
+      updateVolumeUI();
+    }
+
+    function setVolumeLevel(nextVolume) {
+      volume = Math.min(1, Math.max(0, nextVolume));
+      if (volume > 0) {
+        lastVolume = volume;
+        isMuted = false;
+      } else {
+        isMuted = true;
+      }
+      applyVolume();
     }
 
     function showFallback(msg) {
@@ -299,6 +346,7 @@
       el.src = track.src;
       el.preload = "auto";
       el.muted = false;
+      el.volume = isMuted ? 0 : volume;
       el.playsInline = true;
       el.setAttribute("playsinline", "");
       el.addEventListener("ended", onEnded);
@@ -375,6 +423,26 @@
           startWithSound();
         }
       });
+
+      if (volumeSlider) {
+        volumeSlider.addEventListener("input", function () {
+          setVolumeLevel(Number(volumeSlider.value) / 100);
+        });
+      }
+
+      if (btnMute) {
+        btnMute.addEventListener("click", function () {
+          if (isMuted) {
+            isMuted = false;
+            volume = lastVolume > 0 ? lastVolume : 0.7;
+          } else {
+            isMuted = true;
+            lastVolume = volume > 0 ? volume : lastVolume;
+            volume = 0;
+          }
+          applyVolume();
+        });
+      }
     }
 
     if (!tracks.length) {
@@ -383,6 +451,7 @@
     }
 
     updateCounter();
+    updateVolumeUI();
     bindControls();
     loadTrack(0, true);
   }
@@ -510,8 +579,6 @@
       applyStats(data.stats);
     });
   }
-
-  /* ── FiveM load progress ── */
 
   const DEFAULT_LOADING_MESSAGES = [
     "Convincing the server you're not a cop...",
