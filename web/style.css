@@ -384,9 +384,6 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: var(--panel-radius);
   padding: 18px;
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 var(--glass-highlight);
   animation: slideInLeft 0.6s ease-out both;
 }
 
@@ -413,7 +410,6 @@ body {
     background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     border-color 0.3s ease,
     color 0.3s ease,
-    box-shadow 0.3s ease,
     transform 0.2s ease;
 }
 
@@ -426,7 +422,6 @@ body {
   background: var(--tab-active-bg);
   border-color: var(--tab-active-border);
   color: var(--tab-active-text);
-  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.2);
 }
 
 .panel-views {
@@ -495,7 +490,6 @@ body {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-align: center;
-  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.15);
 }
 
 .info-card {
@@ -514,7 +508,6 @@ body {
 .info-card-current {
   background: var(--tab-active-bg);
   border-color: var(--tab-active-border);
-  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.12);
 }
 
 .info-card-current:hover {
@@ -618,7 +611,6 @@ body {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--accent);
-  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.35);
   flex-shrink: 0;
 }
 
