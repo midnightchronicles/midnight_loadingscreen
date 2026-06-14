@@ -3,16 +3,21 @@ game 'gta5'
 
 author 'Midnight'
 description 'Midnight Loading Screen'
-version '1.0.0'
+version '1.0.1'
 
 loadscreen 'web/index.html'
 loadscreen_cursor 'yes'
 loadscreen_manual_shutdown 'yes'
 
+shared_script 'config.lua'
+
 -- community_bridge is optional at runtime; ensure it in server.cfg before this resource for job/staff counts
 
 client_script 'client/client.lua'
-server_script 'server/server.lua'
+server_scripts {
+    'server/version_check.lua',
+    'server/server.lua',
+}
 
 files {
     'web/index.html',

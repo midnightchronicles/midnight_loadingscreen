@@ -16,6 +16,13 @@ RegisterNetEvent('midnight_loadingscreen:updateStats', sendStatsToLoadscreen)
 CreateThread(function()
     ShutdownLoadingScreen()
 
+    if Config and Config.Theme then
+        SendLoadingScreenMessage(json.encode({
+            eventName = 'applyTheme',
+            theme = Config.Theme,
+        }))
+    end
+
     while not NetworkIsSessionStarted() do
         TriggerServerEvent('midnight_loadingscreen:requestStats')
         Wait(REQUEST_INTERVAL_MS)

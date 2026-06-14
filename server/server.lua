@@ -169,6 +169,7 @@ AddEventHandler('playerConnecting', function(_, _, deferrals)
 
     deferrals.handover({
         serverStats = collectServerStats(),
+        theme = Config.Theme,
     })
 end)
 

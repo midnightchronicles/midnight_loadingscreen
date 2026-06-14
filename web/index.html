@@ -80,14 +80,33 @@
   </header>
 
   <aside class="staff-panel" id="staff-panel">
-    <div class="panel-header" id="owner-panel-header">
-      <span class="panel-title" id="owner-panel-title">Owner</span>
+    <nav class="panel-tabs" aria-label="Panel sections">
+      <button type="button" class="panel-tab active" data-tab="team">Staff Team</button>
+      <button type="button" class="panel-tab" data-tab="rules">Rules</button>
+      <button type="button" class="panel-tab" data-tab="updates">Updates</button>
+    </nav>
+
+    <div class="panel-views">
+      <div class="panel-view panel-scroll active" id="panel-team" data-panel="team">
+        <div class="panel-header" id="owner-panel-header">
+          <span class="panel-title" id="owner-panel-title">Owner</span>
+        </div>
+        <div class="owner-list" id="owner-list"></div>
+        <div class="staff-divider" id="staff-divider">
+          <span>Staff</span>
+        </div>
+        <div class="staff-list" id="staff-list"></div>
+      </div>
+
+      <div class="panel-view panel-scroll" id="panel-rules" data-panel="rules">
+        <div class="info-list" id="rules-list"></div>
+      </div>
+
+      <div class="panel-view panel-scroll" id="panel-updates" data-panel="updates">
+        <div class="version-banner hidden" id="updates-version-banner"></div>
+        <div class="info-list" id="updates-list"></div>
+      </div>
     </div>
-    <div class="owner-list" id="owner-list"></div>
-    <div class="staff-divider">
-      <span>Staff</span>
-    </div>
-    <div class="staff-list" id="staff-list"></div>
   </aside>
 
   <div class="video-panel" id="video-panel">

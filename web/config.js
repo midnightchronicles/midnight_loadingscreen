@@ -1,9 +1,6 @@
 const Config = {
   serverName: "Server_name",
 
-  accentColor: "#7c5cff",
-  accentColorRgb: "124, 92, 255",
-
   backgroundImages: [
     "https://r2.fivemanage.com/XMMEvW9JygawUCoh23aGp/CHANGE-ME.png",
   ],
@@ -33,14 +30,42 @@ const Config = {
 
   staff: [
     {
-    name:  "Another Staff",
-    role:  "Another Role",
-    image: "https://r2.fivemanage.com/XMMEvW9JygawUCoh23aGp/CHANGE-ME.png",
+      name:  "Another Staff",
+      role:  "Another Role",
+      image: "https://r2.fivemanage.com/XMMEvW9JygawUCoh23aGp/CHANGE-ME.png",
     },
     {
-    name:  "Another Staff",
-    role:  "Another Role",
-    image: "https://r2.fivemanage.com/XMMEvW9JygawUCoh23aGp/CHANGE-ME.png",
+      name:  "Another Staff",
+      role:  "Another Role",
+      image: "https://r2.fivemanage.com/XMMEvW9JygawUCoh23aGp/CHANGE-ME.png",
+    },
+  ],
+
+  showServerVersion: true, // false hides the version banner on the Updates tab
+  updateVersion: "1.0.0", // your server version
+
+  rules: [
+    {
+      title: "random rule",
+      text: "rule description",
+    },
+    {
+      title: "random rule",
+      text: "rule description",
+    },
+  ],
+
+  updates: [
+    {
+      current: true,
+      title: "Random Update",
+      text: "New housing interiors and furniture options are now live.",
+      date: "Jun 2026",
+    },
+    {
+      title: "Economy Tweaks",
+      text: "Balanced job payouts and adjusted vehicle prices.",
+      date: "May 2026",
     },
   ],
 };

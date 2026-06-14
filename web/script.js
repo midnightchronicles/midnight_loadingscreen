@@ -5,14 +5,64 @@
     return typeof Config !== "undefined" ? Config : null;
   }
 
-  function applyTheme(cfg) {
-    document.documentElement.style.setProperty("--accent", cfg.accentColor);
-    document.documentElement.style.setProperty("--accent-rgb", cfg.accentColorRgb);
+  const THEME_VAR_MAP = {
+    accent: "--accent",
+    accent_rgb: "--accent-rgb",
+    background: "--background",
+    glass_bg: "--glass-bg",
+    glass_border: "--glass-border",
+    glass_highlight: "--glass-highlight",
+    text_primary: "--text-primary",
+    text_secondary: "--text-secondary",
+    stats_gradient_start: "--stats-gradient-start",
+    stats_gradient_mid: "--stats-gradient-mid",
+    stats_gradient_end: "--stats-gradient-end",
+    police: "--stat-police",
+    police_rgb: "--stat-police-rgb",
+    ems: "--stat-ems",
+    ems_rgb: "--stat-ems-rgb",
+    mechanic: "--stat-mechanic",
+    mechanic_rgb: "--stat-mechanic-rgb",
+    staff_stat: "--stat-staff",
+    staff_stat_rgb: "--stat-staff-rgb",
+    connecting: "--stat-connecting",
+    connecting_rgb: "--stat-connecting-rgb",
+    tab_inactive_bg: "--tab-inactive-bg",
+    tab_inactive_text: "--tab-inactive-text",
+    tab_active_bg: "--tab-active-bg",
+    tab_active_text: "--tab-active-text",
+    tab_active_border: "--tab-active-border",
+    list_item_bg: "--list-item-bg",
+    list_item_border: "--list-item-border",
+    list_item_hover_bg: "--list-item-hover-bg",
+    owner_card_bg: "--owner-card-bg",
+    owner_card_border: "--owner-card-border",
+  };
+
+  function applyTheme(theme) {
+    if (!theme) return;
+
+    Object.keys(THEME_VAR_MAP).forEach(function (key) {
+      const value = theme[key];
+      if (value != null && value !== "") {
+        document.documentElement.style.setProperty(THEME_VAR_MAP[key], value);
+      }
+    });
+  }
+
+  function applyConfig(cfg) {
     document.documentElement.style.setProperty(
       "--bg-transition",
-      (cfg.backgroundTransition / 1000) + "s"
+      ((cfg.backgroundTransition || 1500) / 1000) + "s"
     );
     document.getElementById("server-name").textContent = cfg.serverName;
+  }
+
+  function getTheme() {
+    if (window.nuiHandoverData && window.nuiHandoverData.theme) {
+      return window.nuiHandoverData.theme;
+    }
+    return null;
   }
 
   function getTracks(cfg) {
@@ -175,13 +225,138 @@
     return [];
   }
 
+  function createInfoCard(entry, showDate) {
+    const card = document.createElement("article");
+    card.className = "info-card";
+    if (entry.current) {
+      card.classList.add("info-card-current");
+    }
+
+    const header = document.createElement("div");
+    header.className = "info-card-header";
+
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "info-card-title-wrap";
+
+    const title = document.createElement("h3");
+    title.className = "info-card-title";
+    title.textContent = entry.title || "Untitled";
+    titleWrap.appendChild(title);
+
+    if (entry.current) {
+      const current = document.createElement("span");
+      current.className = "info-card-current-badge";
+      current.textContent = "Current";
+      titleWrap.appendChild(current);
+    }
+
+    header.appendChild(titleWrap);
+
+    if (showDate && entry.date) {
+      const date = document.createElement("span");
+      date.className = "info-card-date";
+      date.textContent = entry.date;
+      header.appendChild(date);
+    }
+
+    const text = document.createElement("p");
+    text.className = "info-card-text";
+    text.textContent = entry.text || "";
+
+    card.appendChild(header);
+    card.appendChild(text);
+    return card;
+  }
+
+  function getUpdateEntries(cfg) {
+    const items = (cfg.updates || []).filter(function (entry) {
+      return entry && typeof entry === "object" && (entry.title || entry.text);
+    });
+
+    if (!items.length) return items;
+
+    const hasCurrent = items.some(function (entry) {
+      return entry.current === true;
+    });
+
+    if (!hasCurrent) {
+      return items.map(function (entry, index) {
+        if (index === 0) {
+          return Object.assign({}, entry, { current: true });
+        }
+        return entry;
+      });
+    }
+
+    return items;
+  }
+
+  function renderVersionBanner(el, version, show) {
+    if (!el) return;
+
+    if (show && version) {
+      el.textContent = "Current update version: " + version;
+      el.classList.remove("hidden");
+    } else {
+      el.textContent = "";
+      el.classList.add("hidden");
+    }
+  }
+
+  function renderInfoList(container, items, showDate, emptyMessage) {
+    container.innerHTML = "";
+
+    if (!items.length) {
+      const empty = document.createElement("p");
+      empty.className = "panel-empty";
+      empty.textContent = emptyMessage;
+      container.appendChild(empty);
+      return;
+    }
+
+    items.forEach(function (entry) {
+      if (!entry || (!entry.title && !entry.text)) return;
+      container.appendChild(createInfoCard(entry, showDate));
+    });
+  }
+
+  function initPanelTabs() {
+    const tabs = document.querySelectorAll(".panel-tab");
+    const views = document.querySelectorAll(".panel-view");
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        const target = tab.getAttribute("data-tab");
+        if (!target) return;
+
+        tabs.forEach(function (t) {
+          t.classList.toggle("active", t === tab);
+        });
+
+        views.forEach(function (view) {
+          view.classList.toggle("active", view.getAttribute("data-panel") === target);
+        });
+      });
+    });
+  }
+
   function initStaff(cfg) {
     const ownerList = document.getElementById("owner-list");
     const ownerHeader = document.getElementById("owner-panel-header");
     const ownerTitle = document.getElementById("owner-panel-title");
     const staffList = document.getElementById("staff-list");
-    const divider = document.querySelector(".staff-divider");
+    const divider = document.getElementById("staff-divider");
+    const rulesList = document.getElementById("rules-list");
+    const updatesList = document.getElementById("updates-list");
+    const versionBanner = document.getElementById("updates-version-banner");
     const owners = getOwners(cfg);
+
+    initPanelTabs();
+    renderVersionBanner(
+      versionBanner,
+      cfg.updateVersion,
+      cfg.showServerVersion !== false
+    );
 
     if (!owners.length) {
       ownerHeader.classList.add("hidden");
@@ -202,30 +377,73 @@
 
     const staff = cfg.staff || [];
     if (!staff.length) {
-      divider.classList.add("hidden");
-      return;
+      if (divider) divider.classList.add("hidden");
+    } else {
+      staff.forEach(function (member) {
+        const item = document.createElement("div");
+        item.className = "staff-item";
+        item.appendChild(createAvatar(member.image, member.name));
+        item.appendChild(createMemberInfo(member.name, member.role));
+        staffList.appendChild(item);
+      });
     }
 
-    staff.forEach(function (member) {
-      const item = document.createElement("div");
-      item.className = "staff-item";
-      item.appendChild(createAvatar(member.image, member.name));
-      item.appendChild(createMemberInfo(member.name, member.role));
-      staffList.appendChild(item);
-    });
+    renderInfoList(
+      rulesList,
+      cfg.rules || [],
+      false,
+      "No rules added yet — edit web/config.js"
+    );
+
+    renderInfoList(
+      updatesList,
+      getUpdateEntries(cfg),
+      true,
+      "No updates added yet — edit web/config.js"
+    );
   }
 
   function initMediaPlayer(cfg) {
     const mode = (cfg.sound || "mp3").toLowerCase();
     const isVideo = mode === "mp4";
     const tracks = getTracks(cfg);
+    const VOLUME_KEY = "midnight_loadingscreen_volume";
+    const MUTED_KEY = "midnight_loadingscreen_muted";
 
+    function loadVolumePrefs() {
+      const defaultPct = Math.min(100, Math.max(0, cfg.defaultVolume != null ? cfg.defaultVolume : 70));
+      let vol = defaultPct / 100;
+      let muted = false;
+
+      try {
+        const stored = localStorage.getItem(VOLUME_KEY);
+        if (stored !== null) {
+          const parsed = Number(stored);
+          if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+            vol = parsed / 100;
+          }
+        }
+        if (localStorage.getItem(MUTED_KEY) === "1") {
+          muted = true;
+        }
+      } catch (err) {
+        // localStorage unavailable in some embedded contexts
+      }
+
+      return {
+        volume: vol,
+        lastVolume: vol > 0 ? vol : defaultPct / 100,
+        isMuted: muted,
+      };
+    }
+
+    const prefs = loadVolumePrefs();
     let currentIndex = 0;
     let isPlaying = false;
     let activeEl = null;
-    let volume = Math.min(1, Math.max(0, (cfg.defaultVolume != null ? cfg.defaultVolume : 70) / 100));
-    let lastVolume = volume;
-    let isMuted = false;
+    let volume = prefs.volume;
+    let lastVolume = prefs.lastVolume;
+    let isMuted = prefs.isMuted;
 
     const container = document.getElementById("media-player");
     const mediaWrap = document.getElementById("media-container");
@@ -284,6 +502,16 @@
       updateVolumeSliderFill();
     }
 
+    function saveVolumePrefs() {
+      try {
+        const level = lastVolume > 0 ? lastVolume : volume;
+        localStorage.setItem(VOLUME_KEY, String(Math.round(level * 100)));
+        localStorage.setItem(MUTED_KEY, isMuted ? "1" : "0");
+      } catch (err) {
+        // ignore
+      }
+    }
+
     function applyVolume() {
       if (activeEl) {
         activeEl.volume = isMuted ? 0 : volume;
@@ -299,6 +527,7 @@
       } else {
         isMuted = true;
       }
+      saveVolumePrefs();
       applyVolume();
     }
 
@@ -440,6 +669,7 @@
             lastVolume = volume > 0 ? volume : lastVolume;
             volume = 0;
           }
+          saveVolumePrefs();
           applyVolume();
         });
       }
@@ -635,6 +865,20 @@
         update(data.loadFraction || 0);
       }
     });
+
+    window.addEventListener("message", function (event) {
+      let data = event.data;
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch (err) {
+          return;
+        }
+      }
+      if (data && data.eventName === "applyTheme" && data.theme) {
+        applyTheme(data.theme);
+      }
+    });
   }
 
   function boot() {
@@ -645,7 +889,8 @@
       return;
     }
 
-    applyTheme(cfg);
+    applyTheme(getTheme());
+    applyConfig(cfg);
     initServerStats();
     initSlideshow(cfg);
     initStaff(cfg);
