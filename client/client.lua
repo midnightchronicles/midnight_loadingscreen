@@ -2,13 +2,21 @@ local EXTRA_DELAY_MS = 5000
 
 local REQUEST_INTERVAL_MS = 2500
 
+local isLoadscreenActive = true
+
+local function sendToLoadscreen(payload)
+    if not isLoadscreenActive then return end
+
+    SendLoadingScreenMessage(json.encode(payload))
+end
+
 local function sendStatsToLoadscreen(stats)
     if not stats then return end
 
-    SendLoadingScreenMessage(json.encode({
+    sendToLoadscreen({
         eventName = 'serverStats',
         stats = stats,
-    }))
+    })
 end
 
 RegisterNetEvent('midnight_loadingscreen:updateStats', sendStatsToLoadscreen)
@@ -17,10 +25,10 @@ CreateThread(function()
     ShutdownLoadingScreen()
 
     if Config and Config.Theme then
-        SendLoadingScreenMessage(json.encode({
+        sendToLoadscreen({
             eventName = 'applyTheme',
             theme = Config.Theme,
-        }))
+        })
     end
 
     while not NetworkIsSessionStarted() do
@@ -30,5 +38,7 @@ CreateThread(function()
 
     Wait(EXTRA_DELAY_MS)
 
+    isLoadscreenActive = false
+    TriggerServerEvent('midnight_loadingscreen:loadscreenClosed')
     ShutdownLoadingScreenNui()
 end)

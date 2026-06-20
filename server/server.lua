@@ -7,6 +7,7 @@ local UPDATE_INTERVAL_MS = 1250
 local Framework = nil
 local ConnectingLicenses = {} -- [license] = true
 local SourceToLicense = {} -- [source] = license
+local ActiveLoadscreens = {} -- [source] = true while client NUI is open
 
 local function isFrameworkReady(fw)
     if not fw then return false end
@@ -160,8 +161,14 @@ local function sendStatsToPlayer(src)
     TriggerClientEvent('midnight_loadingscreen:updateStats', src, collectServerStats())
 end
 
-local function broadcastStats()
-    TriggerClientEvent('midnight_loadingscreen:updateStats', -1, collectServerStats())
+local function broadcastStatsToLoadscreens()
+    if not next(ActiveLoadscreens) then return end
+
+    local stats = collectServerStats()
+
+    for src, _ in pairs(ActiveLoadscreens) do
+        TriggerClientEvent('midnight_loadingscreen:updateStats', src, stats)
+    end
 end
 
 AddEventHandler('playerConnecting', function(_, _, deferrals)
@@ -175,6 +182,7 @@ end)
 
 AddEventHandler('playerDropped', function()
     clearConnecting(source)
+    ActiveLoadscreens[source] = nil
 end)
 
 AddEventHandler('community_bridge:Server:OnPlayerLoaded', function(src)
@@ -182,12 +190,18 @@ AddEventHandler('community_bridge:Server:OnPlayerLoaded', function(src)
 end)
 
 RegisterNetEvent('midnight_loadingscreen:requestStats', function()
-    sendStatsToPlayer(source)
+    local src = source
+    ActiveLoadscreens[src] = true
+    sendStatsToPlayer(src)
+end)
+
+RegisterNetEvent('midnight_loadingscreen:loadscreenClosed', function()
+    ActiveLoadscreens[source] = nil
 end)
 
 CreateThread(function()
     while true do
-        broadcastStats()
+        broadcastStatsToLoadscreens()
         Wait(UPDATE_INTERVAL_MS)
     end
 end)

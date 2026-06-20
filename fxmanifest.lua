@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Midnight'
 description 'Midnight Loading Screen'
-version '1.0.2'
+version '1.0.3'
 
 loadscreen 'web/index.html'
 loadscreen_cursor 'yes'
