@@ -5,6 +5,49 @@
     return typeof Config !== "undefined" ? Config : null;
   }
 
+  const PLACEHOLDER_IMAGE_RE = /change-?me|placeholder|your-?image|example\.com/i;
+
+  function isPlaceholderAsset(value) {
+    if (value == null) return true;
+    const trimmed = String(value).trim();
+    return !trimmed || PLACEHOLDER_IMAGE_RE.test(trimmed);
+  }
+
+  function isSafeImageUrl(url) {
+    if (isPlaceholderAsset(url)) return false;
+    const trimmed = String(url).trim();
+    if (/^https?:\/\//i.test(trimmed)) return true;
+    if (/^(images\/|\.\/)/.test(trimmed)) return true;
+    if (!trimmed.includes("://") && !trimmed.startsWith("data:")) return true;
+    return false;
+  }
+
+  function getInitials(name) {
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (
+      parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
+    ).toUpperCase();
+  }
+
+  function formatStatValue(value) {
+    if (typeof value !== "number" || isNaN(value) || value < 0) return "0";
+    if (value > 9999) return "9999+";
+    return String(Math.floor(value));
+  }
+
+  function clampFraction(value) {
+    const num = Number(value);
+    if (isNaN(num)) return 0;
+    return Math.min(1, Math.max(0, num));
+  }
+
+  function enableBackgroundFallback() {
+    const bg = document.getElementById("background");
+    if (bg) bg.classList.add("background--fallback");
+  }
+
   const THEME_VAR_MAP = {
     accent: "--accent",
     accent_rgb: "--accent-rgb",
@@ -55,7 +98,11 @@
       "--bg-transition",
       ((cfg.backgroundTransition || 1500) / 1000) + "s"
     );
-    document.getElementById("server-name").textContent = cfg.serverName;
+    const serverNameEl = document.getElementById("server-name");
+    if (serverNameEl) {
+      serverNameEl.textContent = cfg.serverName || "Midnight Chronicles";
+    }
+    document.title = (cfg.serverName || "Midnight Chronicles") + " — Loading";
   }
 
   function getTheme() {
@@ -69,10 +116,6 @@
     const mode = (cfg.sound || "mp3").toLowerCase();
     const ext = mode === "mp4" ? ".mp4" : ".mp3";
     const raw = (cfg.tracks || []).slice(0, 2);
-
-    if ((cfg.tracks || []).length > 2) {
-      console.warn("[midnight_loadingscreen] Max 2 tracks");
-    }
 
     return raw
       .map(function (entry) {
@@ -103,10 +146,11 @@
   }
 
   function initSlideshow(cfg) {
-    const images = cfg.backgroundImages || [];
+    const images = (cfg.backgroundImages || []).filter(isSafeImageUrl);
     let currentIndex = 0;
     let activeLayer = "a";
     let timer = null;
+    const failedUrls = {};
 
     const layerA = document.getElementById("bg-layer-a");
     const layerB = document.getElementById("bg-layer-b");
@@ -124,20 +168,43 @@
         const img = new Image();
         img.onload = function () { resolve(url); };
         img.onerror = function () { reject(url); };
+        img.referrerPolicy = "no-referrer";
         img.src = url;
       });
     }
 
     function setBackground(el, url) {
-      el.style.backgroundImage = 'url("' + url + '")';
+      if (!el || !url) return;
+      el.style.backgroundImage = "url(" + JSON.stringify(String(url)) + ")";
+    }
+
+    function stopSlideshow() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function allImagesFailed() {
+      return images.length > 0 && Object.keys(failedUrls).length >= images.length;
     }
 
     function show(index) {
-      if (!images.length) return;
+      if (!images.length || allImagesFailed()) {
+        enableBackgroundFallback();
+        stopSlideshow();
+        return;
+      }
 
       const url = images[index];
+      if (failedUrls[url]) {
+        advance();
+        return;
+      }
+
       const next = inactiveEl();
       const curr = activeEl();
+      if (!next || !curr) return;
 
       preload(url)
         .then(function (loaded) {
@@ -147,22 +214,38 @@
           activeLayer = activeLayer === "a" ? "b" : "a";
         })
         .catch(function () {
+          failedUrls[url] = true;
+          if (allImagesFailed()) {
+            enableBackgroundFallback();
+            stopSlideshow();
+            return;
+          }
           advance();
         });
     }
 
     function advance() {
-      if (!images.length) return;
+      if (!images.length || allImagesFailed()) return;
       currentIndex = (currentIndex + 1) % images.length;
       show(currentIndex);
     }
 
-    if (!images.length) return;
+    if (!images.length) {
+      enableBackgroundFallback();
+      return;
+    }
+
+    if (!layerA) return;
 
     setBackground(layerA, images[0]);
     layerA.classList.add("active");
 
     preload(images[0]).catch(function () {
+      failedUrls[images[0]] = true;
+      if (allImagesFailed()) {
+        enableBackgroundFallback();
+        return;
+      }
       advance();
     });
 
@@ -172,25 +255,29 @@
   }
 
   function createAvatar(image, name) {
-    if (image) {
+    const safeName = String(name || "Staff member").trim() || "Staff member";
+
+    if (!isPlaceholderAsset(image)) {
       const img = document.createElement("img");
       img.className = "avatar";
-      img.src = image;
-      img.alt = name;
+      img.src = String(image).trim();
+      img.alt = safeName;
       img.referrerPolicy = "no-referrer";
+      img.loading = "lazy";
+      img.decoding = "async";
       img.onerror = function () {
-        const fb = createFallback(name);
-        img.replaceWith(fb);
+        img.replaceWith(createFallback(safeName));
       };
       return img;
     }
-    return createFallback(name);
+    return createFallback(safeName);
   }
 
   function createFallback(name) {
     const div = document.createElement("div");
     div.className = "avatar-fallback";
-    div.textContent = (name || "?").charAt(0).toUpperCase();
+    div.setAttribute("aria-hidden", "true");
+    div.textContent = getInitials(name);
     return div;
   }
 
@@ -198,16 +285,28 @@
     const info = document.createElement("div");
     info.className = "member-info";
 
+    const safeName = String(name || "Unknown").trim() || "Unknown";
+    const safeRole = String(role || "").trim();
+
     const nameEl = document.createElement("div");
     nameEl.className = "member-name";
-    nameEl.textContent = name;
-
-    const badge = document.createElement("span");
-    badge.className = "role-badge";
-    badge.textContent = role;
+    nameEl.textContent = safeName;
+    if (safeName.length > 24) {
+      nameEl.title = safeName;
+    }
 
     info.appendChild(nameEl);
-    info.appendChild(badge);
+
+    if (safeRole) {
+      const badge = document.createElement("span");
+      badge.className = "role-badge";
+      badge.textContent = safeRole;
+      if (safeRole.length > 28) {
+        badge.title = safeRole;
+      }
+      info.appendChild(badge);
+    }
+
     return info;
   }
 
@@ -240,13 +339,16 @@
 
     const title = document.createElement("h3");
     title.className = "info-card-title";
-    title.textContent = entry.title || "Untitled";
+    title.textContent = entry.title || "Untitled update";
+    if (entry.title && entry.title.length > 48) {
+      title.title = entry.title;
+    }
     titleWrap.appendChild(title);
 
     if (entry.current) {
       const current = document.createElement("span");
       current.className = "info-card-current-badge";
-      current.textContent = "Current";
+      current.textContent = "Latest";
       titleWrap.appendChild(current);
     }
 
@@ -295,7 +397,7 @@
     if (!el) return;
 
     if (show && version) {
-      el.textContent = "Current update version: " + version;
+      el.textContent = "Server version " + version;
       el.classList.remove("hidden");
     } else {
       el.textContent = "";
@@ -321,29 +423,98 @@
   }
 
   function initPanelTabs() {
-    const tabs = document.querySelectorAll(".panel-tab");
-    const views = document.querySelectorAll(".panel-view");
+    const tabs = Array.prototype.slice.call(document.querySelectorAll(".panel-tab"));
+    const views = Array.prototype.slice.call(document.querySelectorAll(".panel-view"));
 
-    tabs.forEach(function (tab) {
+    function activateTab(tab) {
+      const target = tab.getAttribute("data-tab");
+      if (!target) return;
+
+      tabs.forEach(function (t) {
+        const selected = t === tab;
+        t.classList.toggle("active", selected);
+        t.setAttribute("aria-selected", selected ? "true" : "false");
+        t.tabIndex = selected ? 0 : -1;
+      });
+
+      views.forEach(function (view) {
+        const isActive = view.getAttribute("data-panel") === target;
+        view.classList.toggle("active", isActive);
+        view.hidden = !isActive;
+        view.tabIndex = isActive ? 0 : -1;
+      });
+    }
+
+    tabs.forEach(function (tab, index) {
       tab.addEventListener("click", function () {
-        const target = tab.getAttribute("data-tab");
-        if (!target) return;
+        activateTab(tab);
+      });
 
-        tabs.forEach(function (t) {
-          t.classList.toggle("active", t === tab);
-        });
+      tab.addEventListener("keydown", function (event) {
+        let nextIndex = index;
 
-        views.forEach(function (view) {
-          view.classList.toggle("active", view.getAttribute("data-panel") === target);
-        });
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+          event.preventDefault();
+          nextIndex = (index + 1) % tabs.length;
+        } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+          event.preventDefault();
+          nextIndex = (index - 1 + tabs.length) % tabs.length;
+        } else if (event.key === "Home") {
+          event.preventDefault();
+          nextIndex = 0;
+        } else if (event.key === "End") {
+          event.preventDefault();
+          nextIndex = tabs.length - 1;
+        } else {
+          return;
+        }
+
+        tabs[nextIndex].focus();
+        activateTab(tabs[nextIndex]);
       });
     });
   }
 
+  function initRulesOnboarding() {
+    const rulesTab = document.getElementById("tab-rules");
+    const badge = document.getElementById("tab-rules-badge");
+    const RULES_SEEN_KEY = "midnight_rules_seen";
+    if (!rulesTab) return;
+
+    let seen = false;
+    try {
+      seen = localStorage.getItem(RULES_SEEN_KEY) === "1";
+    } catch (err) {
+      // localStorage unavailable in some embedded contexts
+    }
+
+    let cleared = false;
+    function clearNudge() {
+      if (cleared) return;
+      cleared = true;
+      rulesTab.classList.remove("panel-tab--nudge");
+      if (badge) badge.classList.add("hidden");
+      try {
+        localStorage.setItem(RULES_SEEN_KEY, "1");
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    if (!seen) {
+      rulesTab.classList.add("panel-tab--nudge");
+      if (badge) badge.classList.remove("hidden");
+    } else {
+      cleared = true;
+    }
+
+    // Focus covers keyboard tab activation (arrow-key roving focuses before activating)
+    rulesTab.addEventListener("click", clearNudge);
+    rulesTab.addEventListener("focus", clearNudge);
+  }
+
   function initStaff(cfg) {
     const ownerList = document.getElementById("owner-list");
-    const ownerHeader = document.getElementById("owner-panel-header");
-    const ownerTitle = document.getElementById("owner-panel-title");
     const staffList = document.getElementById("staff-list");
     const divider = document.getElementById("staff-divider");
     const rulesList = document.getElementById("rules-list");
@@ -352,6 +523,7 @@
     const owners = getOwners(cfg);
 
     initPanelTabs();
+    initRulesOnboarding();
     renderVersionBanner(
       versionBanner,
       cfg.updateVersion,
@@ -359,13 +531,8 @@
     );
 
     if (!owners.length) {
-      ownerHeader.classList.add("hidden");
       ownerList.classList.add("hidden");
     } else {
-      if (ownerTitle) {
-        ownerTitle.textContent = owners.length > 1 ? "Owners" : "Owner";
-      }
-
       owners.forEach(function (member) {
         const card = document.createElement("div");
         card.className = "owner-card";
@@ -375,9 +542,15 @@
       });
     }
 
-    const staff = cfg.staff || [];
+    const staff = (cfg.staff || []).filter(function (member) {
+      return member && member.name;
+    });
     if (!staff.length) {
       if (divider) divider.classList.add("hidden");
+      const emptyStaff = document.createElement("p");
+      emptyStaff.className = "panel-empty";
+      emptyStaff.textContent = "No staff listed yet. Ask in Discord if you need help.";
+      staffList.appendChild(emptyStaff);
     } else {
       staff.forEach(function (member) {
         const item = document.createElement("div");
@@ -392,14 +565,14 @@
       rulesList,
       cfg.rules || [],
       false,
-      "No rules added yet — edit web/config.js"
+      "No rules posted yet. Open Updates for server news."
     );
 
     renderInfoList(
       updatesList,
       getUpdateEntries(cfg),
       true,
-      "No updates added yet — edit web/config.js"
+      "No updates yet. New patches show up here after restarts."
     );
   }
 
@@ -470,15 +643,25 @@
     if (audioHint) audioHint.classList.add("hidden");
 
     function updateCounter() {
-      counter.textContent = tracks.length
-        ? (currentIndex + 1) + " / " + tracks.length
-        : "0 / 0";
+      if (!counter) return;
+      const current = tracks.length ? currentIndex + 1 : 0;
+      const total = tracks.length;
+      counter.textContent = total ? current + " / " + total : "0 / 0";
+      counter.classList.toggle("hidden", total <= 1);
+      counter.setAttribute(
+        "aria-label",
+        total ? "Track " + current + " of " + total : "No tracks"
+      );
     }
 
     function setPlayState(playing) {
       isPlaying = playing;
+      panel.classList.toggle("is-playing", playing);
       iconPlay.classList.toggle("hidden", playing);
       iconPause.classList.toggle("hidden", !playing);
+      if (btnPlay) {
+        btnPlay.setAttribute("aria-label", playing ? "Pause" : "Play");
+      }
     }
 
     function getVolumePercent() {
@@ -532,7 +715,10 @@
     }
 
     function showFallback(msg) {
-      fallback.innerHTML = "<p>" + (msg || "Media unavailable") + "</p>";
+      fallback.textContent = "";
+      const p = document.createElement("p");
+      p.textContent = msg || "This track couldn't load.";
+      fallback.appendChild(p);
       fallback.classList.remove("hidden");
     }
 
@@ -569,6 +755,7 @@
 
       if (!isVideo) {
         audioLabel.textContent = track.title;
+        audioLabel.title = track.title;
       }
 
       const el = document.createElement(isVideo ? "video" : "audio");
@@ -580,7 +767,7 @@
       el.setAttribute("playsinline", "");
       el.addEventListener("ended", onEnded);
       el.addEventListener("error", function () {
-        showFallback("Could not load: " + track.src);
+        showFallback("Couldn't load this track. Try the next one.");
         setPlayState(false);
       });
       el.addEventListener("playing", function () {
@@ -599,7 +786,7 @@
           promise.catch(function () {
             setPlayState(false);
             if (audioHint) {
-              audioHint.textContent = "Autoplay blocked - press play";
+              audioHint.textContent = "Press play to start the music";
               audioHint.classList.remove("hidden");
             }
           });
@@ -626,13 +813,24 @@
       }).catch(function () {
         setPlayState(false);
         if (audioHint) {
-          audioHint.textContent = "Autoplay blocked - press play";
+          audioHint.textContent = "Press play to start the music";
           audioHint.classList.remove("hidden");
         }
       });
     }
 
     function bindControls() {
+      const canSkip = tracks.length > 1;
+
+      if (btnPrev) {
+        btnPrev.disabled = !canSkip;
+        btnPrev.setAttribute("aria-disabled", canSkip ? "false" : "true");
+      }
+      if (btnNext) {
+        btnNext.disabled = !canSkip;
+        btnNext.setAttribute("aria-disabled", canSkip ? "false" : "true");
+      }
+
       btnPrev.addEventListener("click", function () {
         if (tracks.length < 2) return;
         loadTrack(currentIndex - 1, true);
@@ -673,6 +871,63 @@
           applyVolume();
         });
       }
+
+      const shortcutHint = document.getElementById("shortcut-hint");
+      const SHORTCUTS_KEY = "midnight_shortcuts_used";
+      let shortcutsUsed = false;
+      try {
+        shortcutsUsed = localStorage.getItem(SHORTCUTS_KEY) === "1";
+      } catch (err) {
+        // localStorage unavailable in some embedded contexts
+      }
+      if (shortcutHint && !shortcutsUsed) {
+        shortcutHint.classList.remove("hidden");
+      }
+
+      function dismissShortcutHint() {
+        if (shortcutsUsed) return;
+        shortcutsUsed = true;
+        if (shortcutHint) shortcutHint.classList.add("hidden");
+        try {
+          localStorage.setItem(SHORTCUTS_KEY, "1");
+        } catch (err) {
+          // ignore
+        }
+      }
+
+      function isMusicFocused() {
+        const active = document.activeElement;
+        return !!(active && panel.contains(active));
+      }
+
+      document.addEventListener("keydown", function (event) {
+        const active = document.activeElement;
+        if (active) {
+          const tag = active.tagName;
+          if (tag === "INPUT" || tag === "TEXTAREA" || active.isContentEditable) {
+            return;
+          }
+        }
+        if (panel.classList.contains("hidden")) return;
+        if (!isMusicFocused()) return;
+
+        if (event.code === "Space") {
+          event.preventDefault();
+          btnPlay.click();
+          dismissShortcutHint();
+        } else if (event.code === "ArrowLeft" && tracks.length > 1) {
+          event.preventDefault();
+          btnPrev.click();
+          dismissShortcutHint();
+        } else if (event.code === "ArrowRight" && tracks.length > 1) {
+          event.preventDefault();
+          btnNext.click();
+          dismissShortcutHint();
+        } else if (event.key === "m" || event.key === "M") {
+          if (btnMute) btnMute.click();
+          dismissShortcutHint();
+        }
+      });
     }
 
     if (!tracks.length) {
@@ -691,6 +946,10 @@
     const elements = {};
     const displayed = {};
     const animFrames = {};
+    const statsBar = document.getElementById("stats-bar");
+    const statsLiveRegion = document.getElementById("stats-live-region");
+    let statsReady = false;
+    let lastAnnouncedGlance = { players: null, connecting: null };
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const COUNT_DURATION_MS = 650;
 
@@ -707,9 +966,21 @@
       displayed[key] = null;
     });
 
+    function clearStatPending(key) {
+      const entry = elements[key];
+      if (!entry || !entry.el) return;
+      if (entry.el.classList.contains("stats-pending")) {
+        entry.el.classList.remove("stats-pending");
+        entry.el.removeAttribute("aria-busy");
+        displayed[key] = null;
+      }
+    }
+
     function animateStatValue(key, target) {
       const entry = elements[key];
       if (!entry || !entry.el) return;
+
+      clearStatPending(key);
 
       const wrap = entry.wrap;
       const el = entry.el;
@@ -721,6 +992,8 @@
         const mid = parseInt(el.textContent, 10);
         if (!isNaN(mid)) {
           displayed[key] = mid;
+        } else {
+          displayed[key] = 0;
         }
       }
 
@@ -728,7 +1001,7 @@
       if (!isFirstRender && from === target) return;
 
       if (reducedMotion || from === target) {
-        el.textContent = String(target);
+        el.textContent = formatStatValue(target);
         displayed[key] = target;
         return;
       }
@@ -746,14 +1019,14 @@
         const eased = easeOutCubic(t);
         const current = Math.round(from + (target - from) * eased);
 
-        el.textContent = String(current);
+        el.textContent = formatStatValue(current);
 
         if (t < 1) {
           animFrames[key] = requestAnimationFrame(frame);
           return;
         }
 
-        el.textContent = String(target);
+        el.textContent = formatStatValue(target);
         displayed[key] = target;
         animFrames[key] = null;
 
@@ -777,14 +1050,72 @@
       animFrames[key] = requestAnimationFrame(frame);
     }
 
+    function announceStats(stats, isFirst) {
+      if (!statsLiveRegion || !stats) return;
+
+      const players = typeof stats.players === "number" && !isNaN(stats.players) ? stats.players : 0;
+      const connecting = typeof stats.connecting === "number" && !isNaN(stats.connecting) ? stats.connecting : 0;
+
+      if (isFirst) {
+        lastAnnouncedGlance = { players: players, connecting: connecting };
+        let message;
+        if (players > 0) {
+          message = formatStatValue(players) + " already in the city";
+        } else {
+          message = "You're first in line — city is warming up";
+        }
+        if (connecting > 0) {
+          message += ", " + formatStatValue(connecting) + " connecting";
+        }
+        message += ".";
+        statsLiveRegion.textContent = message;
+        return;
+      }
+
+      if (
+        players === lastAnnouncedGlance.players &&
+        connecting === lastAnnouncedGlance.connecting
+      ) {
+        return;
+      }
+
+      lastAnnouncedGlance = { players: players, connecting: connecting };
+
+      let update = formatStatValue(players) + " online";
+      if (connecting > 0) {
+        update += ", " + formatStatValue(connecting) + " connecting";
+      }
+      statsLiveRegion.textContent = update + ".";
+    }
+
     function applyStats(stats) {
       if (!stats) return;
+
+      const isFirst = !statsReady;
+
+      if (isFirst) {
+        statsReady = true;
+        if (statsBar) {
+          statsBar.setAttribute("aria-busy", "false");
+          statsBar.classList.add("stats-bar--ready");
+        }
+      }
 
       statKeys.forEach(function (key) {
         const raw = stats[key];
         const value = typeof raw === "number" && !isNaN(raw) ? raw : 0;
         animateStatValue(key, value);
       });
+
+      const connectingItem = document.querySelector('.stats-item[data-stat="connecting"]');
+      if (connectingItem) {
+        const connectingCount = typeof stats.connecting === "number" && !isNaN(stats.connecting)
+          ? stats.connecting
+          : 0;
+        connectingItem.classList.toggle("stats-connecting-active", connectingCount > 0);
+      }
+
+      announceStats(stats, isFirst);
     }
 
     function parseMessageData(raw) {
@@ -811,10 +1142,10 @@
   }
 
   const DEFAULT_LOADING_MESSAGES = [
-    "Convincing the server you're not a cop...",
-    "Loading chaos... please stand by",
-    "Bribing the traffic lights to stay green",
-    "Don't worry, the loading bar is just dramatic",
+    "Convincing dispatch you're not a cop...",
+    "Warming up the city for your arrival...",
+    "Bribing traffic lights to stay green...",
+    "The loading bar is mostly for dramatic effect",
   ];
 
   function initProgress(cfg) {
@@ -822,6 +1153,7 @@
     const fill = document.getElementById("progress-fill");
     const percent = document.getElementById("progress-percent");
     const status = document.getElementById("progress-status");
+    const progressBar = document.getElementById("progress-bar");
 
     const messages = (cfg.loadingMessages && cfg.loadingMessages.length)
       ? cfg.loadingMessages
@@ -832,7 +1164,7 @@
     let finished = false;
 
     function showMessage(index) {
-      if (finished || !messages.length) return;
+      if (finished || !messages.length || !status) return;
       status.textContent = messages[index % messages.length];
     }
 
@@ -842,18 +1174,21 @@
       showMessage(msgIndex);
     }
 
-    showMessage(0);
+    if (status) showMessage(0);
     const rotateTimer = setInterval(nextMessage, interval);
 
     function update(fraction) {
       const pct = Math.min(100, Math.max(0, Math.round(fraction * 100)));
-      fill.style.width = pct + "%";
-      percent.textContent = pct + "%";
+      if (fill) fill.style.transform = "scaleX(" + (pct / 100) + ")";
+      if (percent) percent.textContent = pct + "%";
+      if (progressBar) progressBar.setAttribute("aria-valuenow", String(pct));
 
       if (pct >= 100 && !finished) {
         finished = true;
         clearInterval(rotateTimer);
-        status.textContent = cfg.extraDelayMessage || "Setting up your character... hang tight!";
+        if (status) {
+          status.textContent = cfg.extraDelayMessage || "Getting your character ready. You're almost in.";
+        }
       }
     }
 
@@ -862,7 +1197,7 @@
       if (!data || !data.eventName) return;
 
       if (data.eventName === "loadProgress") {
-        update(data.loadFraction || 0);
+        update(clampFraction(data.loadFraction));
       }
     });
 
@@ -885,7 +1220,7 @@
     const cfg = getConfig();
     if (!cfg) {
       document.getElementById("progress-status").textContent =
-        "Config error — check web/config.js for syntax mistakes.";
+        "The loadscreen hit a snag. Ask staff to check the server setup.";
       return;
     }
 
